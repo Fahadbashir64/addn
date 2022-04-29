@@ -16,6 +16,8 @@ import jwt from "jsonwebtoken";
 // import { send } from "process";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import path from "path";
+import { fileURLToPath } from "url";
 
 //db connection
 
@@ -51,6 +53,10 @@ app.use(
   })
 );
 
+const __filename = fileURLToPath(import.meta.url);
+// 👇️ "/home/john/Desktop/javascript"
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, "public/build")));
 //routes
 
 app.post("/generate", (req, res) => {
@@ -353,6 +359,9 @@ app.get("/apitoken", (req, res) => {
     });
 });
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname + "public/index.html"));
+});
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
       res1.names.forEach((element) => {
