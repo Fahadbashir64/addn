@@ -156,13 +156,13 @@ app.post("/stocks", (req, res) => {
       .then((response) => response.json())
       .then((data1) => {
         var temp = [];
-        /* data1.forEach((element) => {
+        data1.forEach((element) => {
           if (element.quantity != 0) temp.push(element);
         });
         temp = temp.sort(function (a, b) {
           return a.purchasePrice - b.purchasePrice;
-        });*/
-        res.send(data1);
+        });
+        res.send(temp[0]);
       })
       .catch((error) => {
         console.log(error);
@@ -359,6 +359,7 @@ app.get("/apitoken", (req, res) => {
     });
 });
 
+/*
 app.get("/saveitems", (req, res) => {
   fetch("https://api.prepaidforge.com/v1/1.0/findAllProducts", {
     method: "GET",
@@ -375,7 +376,7 @@ app.get("/saveitems", (req, res) => {
       res.send(error);
     });
 });
-
+*/
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname + "public/index.html"));
 });
