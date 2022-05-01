@@ -156,13 +156,13 @@ app.post("/stocks", (req, res) => {
       .then((response) => response.json())
       .then((data1) => {
         var temp = [];
-        data1.forEach((element) => {
+       /* data1.forEach((element) => {
           if (element.quantity != 0) temp.push(element);
         });
         temp = temp.sort(function (a, b) {
           return a.purchasePrice - b.purchasePrice;
-        });
-        res.send(temp[0]);
+        });*/
+        res.send(data1);
       })
       .catch((error) => {
         console.log(error);
