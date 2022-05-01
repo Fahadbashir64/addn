@@ -156,7 +156,7 @@ app.post("/stocks", (req, res) => {
       .then((response) => response.json())
       .then((data1) => {
         var temp = [];
-       /* data1.forEach((element) => {
+        /* data1.forEach((element) => {
           if (element.quantity != 0) temp.push(element);
         });
         temp = temp.sort(function (a, b) {
@@ -352,6 +352,23 @@ app.get("/apitoken", (req, res) => {
     .then((res) => res.json())
     .then((data) => {
       console.log(data.apiToken);
+      res.send(data);
+    })
+    .catch((error) => {
+      res.send(error);
+    });
+});
+
+app.get("/saveitems", (req, res) => {
+  fetch("https://api.prepaidforge.com/v1/1.0/findAllProducts", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      Product.insertMany(data);
       res.send(data);
     })
     .catch((error) => {
