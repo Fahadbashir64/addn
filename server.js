@@ -88,7 +88,6 @@ app.post("/generate", (req, res) => {
 app.post("/connect", (req, res) => {
   Buyer.findOne({
     key: req.body.buyer.key,
-    email: req.body.email,
   }).then((BuyerExist) => {
     if (BuyerExist) {
       const token = jwt.sign({ userId: BuyerExist._id }, "talhakhan", {
