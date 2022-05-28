@@ -7,13 +7,13 @@ import Buyer from "./models/Buyer.js";
 import Product from "./models/Product.js";
 import Country from "./models/Country.js";
 import Currency from "./models/Currency.js";
+import Promo from "./models/Promo.js";
 import CC from "currency-converter-lt";
 
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import jwt from "jsonwebtoken";
-// import { send } from "process";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import path from "path";
@@ -58,6 +58,40 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public/build")));
 //routes
+
+app.post("/createpromo", (req, res) => {
+  Promo.findOne({
+    code: req.body.code,
+  }).then((res2) => {
+    if (res2) {
+      return res.status(400).send("Code already exists");
+    }
+    const promo = new Promo({
+      _id: new mongoose.Types.ObjectId(),
+      code: req.body.code,
+      discount: req.body.discount,
+    });
+    promo
+      .save()
+      .then((result) => {
+        res.status(200).json({ msg: "successfully submitted" });
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json({ msg: "error occured" });
+      });
+  });
+});
+
+app.post("/getpromo", (req, res) => {
+  Promo.findOne({ code: req.body.code }).then((res2) => {
+    if (res2) {
+      res.status(200).send(res2);
+    } else {
+      res.status(400).send("code does not exist");
+    }
+  });
+});
 
 app.post("/generate", (req, res) => {
   Buyer.findOne({
