@@ -71,6 +71,8 @@ app.post("/generate", (req, res) => {
       key: req.body.buyer.key,
       email: req.body.email,
       name: req.body.name,
+      address: req.body.address,
+      zip: req.body.zip,
       balance: 0,
     });
     buyer
