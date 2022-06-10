@@ -415,6 +415,77 @@ app.get("/saveitems", (req, res) => {
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname + "public/index.html"));
 });
+
+app.post("/savecountry", (req, res) => {
+  var country = [];
+  Product.find().then((res1) => {
+    if (res1) {
+      res1.forEach((element) => {
+        if (
+          element.brand === req.body.brand &&
+          country.indexOf(element.countries[0]) === -1
+        ) {
+          country.push(element.countries[0]);
+        }
+      });
+      const countryy = new Country({
+        _id: new mongoose.Types.ObjectId(),
+        brand: req.body.brand,
+        names: country,
+      });
+
+      countryy
+        .save()
+        .then((result) => {
+          console.log(result);
+          res.status(200).json({ msg: "successfully submitted" });
+        })
+        .catch((err) => {
+          console.log(err);
+          res.status(500).json({ msg: "error occured" });
+        });
+    }
+  });
+});
+
+app.post("/savecurrency", (req, res) => {
+  Country.findOne({ brand: req.body.brand }).then((res1) => {
+    res1.names.forEach((element) => {
+      var curr = [];
+      Product.find({ brand: req.body.brand, countries: element }).then(
+        (res2) => {
+          res2.forEach((element2) => {
+            if (curr.indexOf(element2.faceValue.price) === -1)
+              curr.push(element2.faceValue.amount);
+          });
+          curr = curr.sort(function (a, b) {
+            return a - b;
+          });
+          const temp = new Currency({
+            _id: new mongoose.Types.ObjectId(),
+            brand: req.body.brand,
+            country: element,
+            code: res2[0].faceValue.currency,
+            price: curr,
+          });
+
+          temp
+            .save()
+            .then((result) => {
+              console.log(result);
+              // res.status(200).json({ msg: "successfully submitted" });
+            })
+            .catch((err) => {
+              console.log(err);
+              //res.status(500).json({ msg: "error occured" });
+            });
+        }
+      );
+    });
+    //res.status(200).send(res1.names);
+  });
+});
+
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
       res1.names.forEach((element) => {
