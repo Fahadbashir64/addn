@@ -176,7 +176,7 @@ app.post("/generate", (req, res) => {
 app.get("/getCatalog", (req, res) => {
   const username = 'NEXOZ-LLC-SANDBOX';
   const password = '7e68311d-4008-4913-888e-de15491b4db5';
-  const pageSize = 20;
+  const pageSize = 100;
   const pageIndex = 0;
 
   const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
