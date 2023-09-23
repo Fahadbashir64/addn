@@ -19,6 +19,58 @@ import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
+//
+// import fs from 'fs/promises';
+
+// const filePath = 'brands.json';
+
+// // Read file asynchronously
+// async function createCountryData() {
+//   try {
+//     // Read the JSON file asynchronously
+//     const jsonData = await fs.readFile(filePath, 'utf8');
+
+//     // Parse the JSON data
+//     const data = JSON.parse(jsonData);
+//     const brands = ['amazon', 'ebay', 'eneba', 'razer', 'bol.com', 'gamestop', 'uber', 'just', 'deliveroo', 'dominos', 'itunes', 'netflix', 'google', 'spotify', 'twitch', 'cashlib', 'astropay', 'mint', 'pcs', 'transcash', 'flexepin', 'american', 'obucks', 'red', 'ea', 'origin', 'pubg', 'playstation', 'xbox', 'nintendo', 'jagex', 'riot', 'deezer', 'hulu', 'minecraft', 'roblox', 'mobile', 'fortnite', 'bitsa', 'skype', 'vanilla'];
+//     brands.forEach((brand) => {
+//       var country = [];
+//       data.forEach((element) => {
+//         const indexOfSpace = element.name.indexOf(" ");
+//         if (indexOfSpace !== -1) {
+//           var name = element.name.substring(0, indexOfSpace);
+//         } else {
+//           var name = element.name;
+//         }
+//         name = name.toLowerCase();
+//         if (
+//           brand === name
+//         ) {
+//           country.push(element.countryCode);
+//         }
+//       });
+//       console.log('cont', country);
+//       const countryy = new Country1({
+//         _id: new mongoose.Types.ObjectId(),
+//         brand: brand,
+//         names: country,
+//       });
+  
+//       countryy
+//         .save()
+//         .then((result) => {
+//           console.log(result);
+//         })
+//         .catch((err) => {
+//           console.log(err);
+//         });
+//     })
+
+//   } catch (error) {
+//     console.error('Error reading or parsing JSON file:', error.message);
+//   }
+// }
+
 //db connection
 
 const connection_url =
