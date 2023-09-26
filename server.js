@@ -362,10 +362,11 @@ app.post("/order", (req, res) => {
           "Content-Type": "application/json",
           "Authorization": authHeaderValue,
         },
-      }).then((user) => {
+      }).then((accounts) => {
+        console.log('user',accounts);
         const data = {
           RequestId: "17234281-ed7b-412d-83c8-b0c285933806",
-          AccountId: user?.accounts[0].id,
+          AccountId: accounts[0].id,
           Products: req.body.products
         };
         
@@ -384,6 +385,7 @@ app.post("/order", (req, res) => {
                 { balance: result2.balance - req.body.total }
               ).then((result) => {
                 if (result) {
+                  console.log('succes checkout');
                   const frommail = "ozchest1@gmail.com";
                   const password = "ozchest@123";
                   const tomail = req.body.email;
