@@ -176,29 +176,23 @@ app.post("/generate", (req, res) => {
 app.get("/getCatalog", (req, res) => {
   const username = 'NEXOZ-LLC-SANDBOX';
   const password = '7e68311d-4008-4913-888e-de15491b4db5';
-  const pageSize = 100;
-  const pageIndex = 0;
 
   const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
-  fetch("https://api.bamboocardportal.com/api/integration/v2.0/catalog", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": authHeaderValue,
-      },
-      params: {
-        PageSize: pageSize,
-        PageIndex: pageIndex,
-      },
-    })
-      .then((response) => response.json())
-      .then((data1) => {
-        res.send(data1);
-      })
-      .catch((error) => {
-        console.log(error);
-        res.send(error);
-      });
+  fetch("https://api.bamboocardportal.com/api/integration/v1.0/catalog", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": authHeaderValue,
+    },
+  })
+  .then((response) => response.json())
+  .then((data1) => {
+    res.send(data1);
+  })
+  .catch((error) => {
+    console.log(error);
+    res.send(error);
+  });
 });
 
 app.post("/connect", (req, res) => {
@@ -365,9 +359,10 @@ app.post("/order", (req, res) => {
       }).then((response) => response.json())
       .then((accounts) => {
         console.log('user',accounts);
+        const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const data = {
-          RequestId: "17234281-ed7b-412d-83c8-b0c285933806",
-          AccountId: accounts[0].id,
+          RequestId: uniqueId,
+          AccountId: accounts[0]?.id,
           Products: req.body.products
         };
         
@@ -578,6 +573,27 @@ app.post("/savecurrency", (req, res) => {
   });
 });
 
+function updateStocks() {
+  const username = 'NEXOZ-LLC-SANDBOX';
+  const password = '7e68311d-4008-4913-888e-de15491b4db5';
+
+  const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+  fetch("https://api.bamboocardportal.com/api/integration/v1.0/catalog", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": authHeaderValue,
+    },
+  })
+  .then((response) => response.json())
+  .then((data1) => {
+    res.send(data1);
+  })
+  .catch((error) => {
+    console.log(error);
+    res.send(error);
+  });
+}
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
       res1.names.forEach((element) => {
