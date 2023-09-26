@@ -362,7 +362,8 @@ app.post("/order", (req, res) => {
           "Content-Type": "application/json",
           "Authorization": authHeaderValue,
         },
-      }).then((accounts) => {
+      }).then((response) => response.json())
+      .then((accounts) => {
         console.log('user',accounts);
         const data = {
           RequestId: "17234281-ed7b-412d-83c8-b0c285933806",
