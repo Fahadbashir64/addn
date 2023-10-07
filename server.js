@@ -20,7 +20,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 //
-// import fs from 'fs/promises';
+import fs from 'fs/promises';
+import { error } from "console";
 
 // const filePath = 'brands.json';
 
@@ -354,7 +355,7 @@ app.post("/order", (req, res) => {
   } else {
     const username = 'NEXOZ-LLC-SANDBOX';
     const password = '7e68311d-4008-4913-888e-de15491b4db5';
-  
+    console.log(req.body.products);
     const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
     fetch("https://api.bamboocardportal.com/api/integration/v1.0/accounts", {
         method: "GET",
@@ -362,9 +363,15 @@ app.post("/order", (req, res) => {
           "Content-Type": "application/json",
           "Authorization": authHeaderValue,
         },
-      }).then((response) => response.json())
+      }).then((response) => {
+        if(!response.ok) {
+          console.log('Error occurred while fetching accounts');
+          res.status(403).send();
+        }
+      })
       .then((accounts) => {
-        console.log('user',accounts);
+        if (accounts) {
+          console.log('user',accounts);
         const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const data = {
           RequestId: uniqueId,
@@ -379,7 +386,11 @@ app.post("/order", (req, res) => {
           },
           body: JSON.stringify(data),
         };
-        fetch('https://api.bamboocardportal.com/api/integration/v1.0/orders/checkout', requestOptions).then((data1) => {
+        fetch('https://api.bamboocardportal.com/api/integration/v1.0/orders/checkout', requestOptions).then((res) => {
+          console.log("Error occurred while checkout");
+          res.status(403).send(res2);
+        })
+        .then((data1) => {
           if (data1) {
             Buyer.findOne({ key: req.body.user }).then((result2) => {
               Buyer.findOneAndUpdate(
@@ -399,12 +410,11 @@ app.post("/order", (req, res) => {
                       pass: password,
                     },
                   });
-                  console.log(response);
                   var mailOptions = {
                     from: frommail,
                     to: tomail,
                     subject: "Gift Card From Ozchest",
-                    text: `${req.body.product}  Link: ${response}`,
+                    text: `${req.body.product}  Link: ${data1}`,
                   };
                   transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
@@ -419,6 +429,9 @@ app.post("/order", (req, res) => {
             });
           }
         });
+        } 
+      }).catch(error => {
+        console.log(error)
       })
   }
 });
@@ -579,6 +592,104 @@ app.post("/savecurrency", (req, res) => {
   });
 });
 
+app.post("/getStock", (req, res) => {
+  Product.findOne({
+    productId: req.body.productId,
+  }).then((res2) => {
+    res.send(res2);
+  });
+});
+
+function updateStock() {
+  const username = 'NEXOZ-LLC-SANDBOX';
+  const password = '7e68311d-4008-4913-888e-de15491b4db5';
+  const pageSize = 100;
+  const pageIndex = 0;
+
+  const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+  fetch("https://api.bamboocardportal.com/api/integration/v2.0/catalog", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeaderValue,
+      },
+      params: {
+        PageSize: pageSize,
+        PageIndex: pageIndex,
+      },
+    })
+  .then(response => response.json())
+  .then(data => {
+    if (Array.isArray(data)) {
+      // Iterate through each object in the data
+      data.forEach(object => {
+        if (object.products && Array.isArray(object.products)) {
+          object.products.forEach(product => {
+            Product.findOneAndUpdate(
+              { productId: product.id },
+              { count: product.count,
+                price: product.price},
+            ).then((result) => {
+              res.status(200).send();
+            }).catch((error) => {
+                res.status(400).send(error);
+            });
+          });
+        }
+      });
+    } else {
+      console.log('Data does not contain products array.');
+    }
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+  });
+}
+
+async function createStock() {
+  console.log('12');
+
+  const filePath = 'brands.json'; // Replace 'data.json' with your JSON file path
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      const jsonData = JSON.parse(data);
+      if (Array.isArray(jsonData)) {
+        // Iterate through each object in the JSON data
+        let currentDate = new Date();
+        console.log('date',currentDate);
+        jsonData.forEach(object => {
+          if (object.products && Array.isArray(object.products)) {
+            object.products.forEach(product => {
+              const temp = new Product({
+                _id: new mongoose.Types.ObjectId(),
+                productId: product.id,
+                count: product.count,
+                price: product.price,
+                minFaceValue: product.minFaceValue,
+                maxFaceValue: product.maxFaceValue,
+                DateModified: currentDate
+              });
+
+              temp
+                .save()
+                .then((result) => {
+                  // res.status(200).json({ msg: "successfully submitted" });
+                })
+                .catch((err) => {
+                  console.log(err);
+                  // res.status(500).json({ msg: "error occurred" });
+                });
+            });
+          }
+        });
+      } else {
+        console.log('Data does not contain products array.');
+      }
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+    }
+}
+createStock();
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
       res1.names.forEach((element) => {
