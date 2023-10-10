@@ -202,6 +202,28 @@ app.get("/getCatalog", (req, res) => {
       });
 });
 
+app.get("/getExchangeRates", (req, res) => {
+  const username = 'NEXOZ-LLC-SANDBOX';
+  const password = '7e68311d-4008-4913-888e-de15491b4db5';
+
+  const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+  fetch("https://api.bamboocardportal.com/api/integration/v1.0/exchange-rates", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeaderValue,
+      }
+    })
+      .then((response) => response.json())
+      .then((data1) => {
+        res.send(data1);
+      })
+      .catch((error) => {
+        console.log(error);
+        res.send(error);
+      });
+});
+
 app.post("/connect", (req, res) => {
   Buyer.findOne({
     key: req.body.buyer.key,
@@ -689,7 +711,7 @@ async function createStock() {
       console.error('Error parsing JSON:', parseError);
     }
 }
-createStock();
+
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
       res1.names.forEach((element) => {
