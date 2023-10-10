@@ -7,6 +7,7 @@ import Buyer from "./models/Buyer.js";
 import Product from "./models/Product.js";
 import Country from "./models/Country.js";
 import Currency from "./models/Currency.js";
+import CurrencyRate from "./models/CurrencyRate.js";
 import Promo from "./models/Promo.js";
 import CC from "currency-converter-lt";
 
@@ -309,7 +310,7 @@ app.post("/stocks", (req, res) => {
   });
 });
 
-app.post("/convert", (req, res) => {
+app.post("/convertRate", (req, res) => {
   let currencyConverter = new CC({
     from: req.body.from,
     to: req.body.to,
@@ -317,6 +318,31 @@ app.post("/convert", (req, res) => {
   });
   currencyConverter.convert().then((response) => {
     res.send({ cur: response });
+  });
+});
+
+app.post("/convert", (req, res) => {
+  let currencyConverter = new CC({
+    from: req.body.from,
+    to: req.body.to,
+    amount: req.body.amount,
+  });
+  CurrencyRate.findOne({
+    currencyCode: req.body.to,
+  }).then((res1) => {
+    let amount;
+    if (req.body.from == 'USD') {
+      amount = req.body.amount * res1.value;
+      res.send({ cur: amount });
+    } else {
+      CurrencyRate.findOne({
+        currencyCode: req.body.from,
+      }).then((res2) => {
+        console.log('curr2')
+        amount = (res1.value/res2.value) * req.body.amount;
+        res.send({ cur: amount });
+      });
+    }
   });
 });
 
@@ -650,7 +676,8 @@ function updateStock() {
             Product.findOneAndUpdate(
               { productId: product.id },
               { count: product.count,
-                price: product.price},
+                price: product.price,
+                dateModified: new Date()},
             ).then((result) => {
               res.status(200).send();
             }).catch((error) => {
@@ -710,6 +737,69 @@ async function createStock() {
     } catch (parseError) {
       console.error('Error parsing JSON:', parseError);
     }
+}
+
+async function createCurrencyRates() {
+  console.log('12');
+
+  const filePath = 'currency.json'; // Replace 'data.json' with your JSON file path
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      const jsonData = JSON.parse(data);
+        jsonData.rates.forEach(object => {
+          const temp = new CurrencyRate({
+            _id: new mongoose.Types.ObjectId(),
+            currencyCode: object.currencyCode,
+            value: object.value,
+            dateModified: new Date()
+          });
+
+          temp
+            .save()
+            .then((result) => {
+              // res.status(200).json({ msg: "successfully submitted" });
+            })
+            .catch((err) => {
+              console.log(err);
+              // res.status(500).json({ msg: "error occurred" });
+            });
+        });
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+    }
+}
+
+function updateCurrencyRates() {
+  const username = 'NEXOZ-LLC-SANDBOX';
+  const password = '7e68311d-4008-4913-888e-de15491b4db5';
+
+  const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+  fetch("https://api.bamboocardportal.com/api/integration/v1.0/exchange-rates", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeaderValue,
+      }
+    })
+  .then(response => response.json())
+  .then(data => {
+    if (data) {
+      data.rates.forEach(currency => {
+        CurrencyRate.findOneAndUpdate(
+          { currencyCode: currency.currencyCode },
+          { value: currency.value,
+            dateModified: new Date()},
+        ).then((result) => {
+          res.status(200).send();
+        }).catch((error) => {
+            res.status(400).send(error);
+        });
+      });
+    }
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+  });
 }
 
 function populateDB() {
