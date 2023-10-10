@@ -338,8 +338,7 @@ app.post("/convert", (req, res) => {
       CurrencyRate.findOne({
         currencyCode: req.body.from,
       }).then((res2) => {
-        console.log('curr2')
-        amount = (res1.value/res2.value) * req.body.amount;
+        amount = (res2.value/res1.value) * req.body.amount;
         res.send({ cur: amount });
       });
     }
