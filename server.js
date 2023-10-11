@@ -178,8 +178,6 @@ app.post("/generate", (req, res) => {
 app.get("/getCatalog", (req, res) => {
   const username = 'NEXOZ-LLC-SANDBOX';
   const password = '7e68311d-4008-4913-888e-de15491b4db5';
-  const pageSize = 100;
-  const pageIndex = 0;
 
   const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
   fetch("https://api.bamboocardportal.com/api/integration/v2.0/catalog", {
@@ -187,11 +185,7 @@ app.get("/getCatalog", (req, res) => {
       headers: {
         "Content-Type": "application/json",
         "Authorization": authHeaderValue,
-      },
-      params: {
-        PageSize: pageSize,
-        PageIndex: pageIndex,
-      },
+      }
     })
       .then((response) => response.json())
       .then((data1) => {
@@ -800,6 +794,10 @@ function updateCurrencyRates() {
     console.error('Error fetching data:', error);
   });
 }
+
+const interval = 3600000;
+
+const intervalId = setInterval(updateCurrencyRates, interval);
 
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
