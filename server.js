@@ -182,16 +182,12 @@ app.get("/getCatalog", (req, res) => {
   const pageIndex = 0;
 
   const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
-  fetch("https://api.bamboocardportal.com/api/integration/v2.0/catalog", {
+  fetch("https://api.bamboocardportal.com/api/integration/v1.0/catalog", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         "Authorization": authHeaderValue,
-      },
-      params: {
-        PageSize: pageSize,
-        PageIndex: pageIndex,
-      },
+      }
     })
       .then((response) => response.json())
       .then((data1) => {
@@ -654,16 +650,12 @@ function updateStock() {
   const pageIndex = 0;
 
   const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
-  fetch("https://api.bamboocardportal.com/api/integration/v2.0/catalog", {
+  fetch("https://api.bamboocardportal.com/api/integration/v1.0/catalog", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         "Authorization": authHeaderValue,
-      },
-      params: {
-        PageSize: pageSize,
-        PageIndex: pageIndex,
-      },
+      }
     })
   .then(response => response.json())
   .then(data => {
