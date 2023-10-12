@@ -797,6 +797,10 @@ const interval = 3600000;
 
 const intervalId = setInterval(updateCurrencyRates, interval);
 
+const interval2 = 3600000;
+
+const intervalId2 = setInterval(updateStock, interval2);
+
 function populateDB() {
   /* Country.findOne({ brand: req.body.brand }).then((res1) => {
       res1.names.forEach((element) => {
