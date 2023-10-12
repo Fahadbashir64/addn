@@ -659,9 +659,9 @@ function updateStock() {
     })
   .then(response => response.json())
   .then(data => {
-    if (Array.isArray(data)) {
+    if (Array.isArray(data.brands)) {
       // Iterate through each object in the data
-      data.forEach(object => {
+      data.brands.forEach(object => {
         if (object.products && Array.isArray(object.products)) {
           object.products.forEach(product => {
             Product.findOneAndUpdate(
