@@ -406,12 +406,7 @@ app.post("/order", (req, res) => {
           "Content-Type": "application/json",
           "Authorization": authHeaderValue,
         },
-      }).then((response) => {
-        if(!response.ok) {
-          console.log('Error occurred while fetching accounts');
-          res.status(403).send();
-        }
-      })
+      }).then((response) => response.json())
       .then((accounts) => {
         if (accounts) {
           console.log('user',accounts);
@@ -429,13 +424,11 @@ app.post("/order", (req, res) => {
           },
           body: JSON.stringify(data),
         };
-        fetch('https://api.bamboocardportal.com/api/integration/v1.0/orders/checkout', requestOptions).then((res) => {
-          console.log("Error occurred while checkout");
-          res.status(403).send(res2);
-        })
+        fetch('https://api.bamboocardportal.com/api/integration/v1.0/orders/checkout', requestOptions).then((res3) => res3.json())
         .then((data1) => {
           if (data1) {
             Buyer.findOne({ key: req.body.user }).then((result2) => {
+              if(result2) {
               Buyer.findOneAndUpdate(
                 { key: req.body.user },
                 { balance: result2.balance - req.body.total }
@@ -469,6 +462,7 @@ app.post("/order", (req, res) => {
                   });
                 }
               });
+            }
             });
           }
         });
@@ -670,9 +664,9 @@ function updateStock() {
                 price: product.price,
                 dateModified: new Date()},
             ).then((result) => {
-              res.status(200).send();
+              // res.status(200).send();
             }).catch((error) => {
-                res.status(400).send(error);
+                // res.status(400).send(error);
             });
           });
         }
@@ -781,9 +775,9 @@ function updateCurrencyRates() {
           { value: currency.value,
             dateModified: new Date()},
         ).then((result) => {
-          res.status(200).send();
+          // res.status(200).send();
         }).catch((error) => {
-            res.status(400).send(error);
+            // res.status(400).send(error);
         });
       });
     }
