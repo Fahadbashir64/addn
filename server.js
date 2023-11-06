@@ -19,7 +19,8 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
-
+import axios from 'axios';
+import CryptoUser from "./models/CryptoUser.js";
 //
 import fs from 'fs/promises';
 import { error } from "console";
@@ -317,83 +318,199 @@ app.post("/convertRate", (req, res) => {
   });
 });
 
-app.post("/convert", (req, res) => {
-  let currencyConverter = new CC({
-    from: req.body.from,
-    to: req.body.to,
-    amount: req.body.amount,
-  });
-  CurrencyRate.findOne({
-    currencyCode: req.body.to,
-  }).then((res1) => {
-    let amount;
-    if (req.body.from == 'USD') {
-      amount = req.body.amount * res1.value;
-      res.send({ cur: amount });
+// app.post("/convert", (req, res) => {
+//   CurrencyRate.findOne({
+//     currencyCode: req.body.to,
+//   }).then((res1) => {
+//     let amount;
+//     if (req.body.from == 'USD') {
+//       amount = req.body.amount / res1.value;
+//       res.send({ cur: amount });
+//     } else {
+//       CurrencyRate.findOne({
+//         currencyCode: req.body.from,
+//       }).then((res2) => {
+//         amount = (res2.value/res1.value) * req.body.amount;
+//         res.send({ cur: amount });
+//       });
+//     }
+//   });
+// });
+
+function convertCurrency(fromCurrency, toCurrency, amount, callback) {
+  CurrencyRate.findOne({ currencyCode: toCurrency }).then((toCurrencyRate) => {
+    if (fromCurrency === 'USD') {
+      const convertedAmount = amount / toCurrencyRate.value;
+      callback(convertedAmount);
     } else {
-      CurrencyRate.findOne({
-        currencyCode: req.body.from,
-      }).then((res2) => {
-        amount = (res2.value/res1.value) * req.body.amount;
-        res.send({ cur: amount });
+      CurrencyRate.findOne({ currencyCode: fromCurrency }).then((fromCurrencyRate) => {
+        const convertedAmount = (fromCurrencyRate.value / toCurrencyRate.value) * amount;
+        callback(convertedAmount);
       });
     }
   });
+}
+
+// Modify your API route to use the function
+app.post("/convert", (req, res) => {
+  const fromCurrency = req.body.from;
+  const toCurrency = req.body.to;
+  const amount = req.body.amount;
+
+  convertCurrency(fromCurrency, toCurrency, amount, (convertedAmount) => {
+    res.send({ cur: convertedAmount });
+  });
 });
 
-app.post("/order", (req, res) => {
-  if (req.body.brand === "Crypto Voucher") {
-    fetch("https://dev-api.cryptovoucher.io/merchant/voucher/partner", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+const baseUrl = 'https://staging-api.bitjem-services.com';
+let authToken = null;
 
-      body: JSON.stringify({
-        login: "echiefsofficial",
-        password: "smotherunsteadydisruptunbittenstrickencurvyhazilydebug",
-        amount: req.body.price,
-        currency: "EUR",
-        orderId: "3714cc3a-c25f-47e6-83fc-2da76fe27f340",
-      }),
-    }).then((data1) => {
-      if (data1) {
-        Buyer.findOne({ key: req.body.user }).then((result2) => {
-          Buyer.findOneAndUpdate(
-            { key: req.body.user },
-            { balance: result2.balance - req.body.total }
-          ).then((result) => {
-            if (result) {
-              const frommail = "ozchest1@gmail.com";
-              const password = "ozchest@123";
-              const tomail = req.body.email;
-              var transporter = nodemailer.createTransport({
-                service: "gmail",
+// Create a function to obtain or refresh the token
+async function getToken() {
+  let email = 'Ceo@ozchest.com';
+  try {
+    if (authToken) {
+      // Check if the token exists and is still valid (within 24 hours)
+      const tokenExpirationDate = new Date(authToken.expiresAt);
+      if (tokenExpirationDate > new Date()) {
+        return authToken.token;
+      }
+    }
 
-                auth: {
-                  user: frommail,
-                  pass: password,
-                },
-              });
-              var mailOptions = {
-                from: frommail,
-                to: tomail,
-                subject: "Gift Card From Ozchest",
-                text: `${req.body.product}  Link: ${data1.code}`,
-              };
-              console.log(mailOptions.text);
-              transporter.sendMail(mailOptions, function (error, info) {
-                if (error) {
-                  console.log("mail failed");
-                } else {
-                  console.log("mail success");
-                  res.send(data1);
-                }
-              });
-            }
+    CryptoUser.findOne({
+      email: email,
+    }).then(async (user) => {
+      if (user) {
+        const loginData = {
+          emailAddress: email,
+          password: user.password,
+        };
+    
+        const loginResponse = await fetch(`${baseUrl}/api/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(loginData),
+        });
+    
+        if (!loginResponse.ok) {
+          throw new Error('Login Failed');
+        }
+    
+        const loginResponseData = await loginResponse.json();
+    
+        // Store the token and its expiration time
+        authToken = {
+          token: loginResponseData.authToken,
+          expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000), // 24 hours in milliseconds
+        };
+    
+        return authToken.token;
+      } else {
+        console.log("User does not exist");
+        return;
+      }
+    });
+  } catch (error) {
+    throw new Error('Login Failed: ' + error.message);
+  }
+}
+
+// Create a gift card using the stored token
+async function createGiftCard(authToken, data) {
+  try {
+    if (!authToken) {
+      // If the token doesn't exist, obtain one
+      authToken = { token: await getToken() };
+    }
+
+    const giftCardData = {
+      currency: data.code,
+      value: data.amount,
+    };
+
+    // Define the headers with the stored token and Content-Type
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    };
+
+    const giftCardResponse = await fetch(`${baseUrl}/api/GiftCards`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(giftCardData),
+    });
+
+    if (!giftCardResponse.ok) {
+      throw new Error('Create Gift Card Failed');
+    }
+
+    const giftCardResponseData = await giftCardResponse.json();
+
+    console.log('Gift Card Created Successfully');
+    return giftCardResponseData;
+  } catch (error) {
+    console.error('Create Gift Card Failed: ' + error.message);
+  }
+}
+
+function orderBitJem(product, email) {
+  getToken()
+  .then((authToken) => {
+    createGiftCard(authToken, product).then((response) => {
+      if (response) {
+        convertCurrency(product.currency, 'EUR', product.amount, (total) => {
+          User.findOne({ email: email }).then((result2) => {
+            if (result2) {
+            User.findOneAndUpdate(
+              { email: email },
+              { balance: result2?.balance - total }
+            ).then((result) => {
+              if (result) {
+                console.log('succes checkout');
+                const frommail = "ozchest1@gmail.com";
+                const password = "ozchest@123";
+                const tomail = email;
+                var transporter = nodemailer.createTransport({
+                  service: "gmail",
+    
+                  auth: {
+                    user: frommail,
+                    pass: password,
+                  },
+                });
+                var mailOptions = {
+                  from: frommail,
+                  to: tomail,
+                  subject: "Gift Card From Ozchest",
+                  text: `${response}`,
+                };
+                transporter.sendMail(mailOptions, function (error, info) {
+                  if (error) {
+                    console.log("mail failed");
+                  } else {
+                    console.log("mail success");
+                  }
+                });
+              }
+            });
+          }
           });
         });
-      }
+    }
+    }).catch((error) => {
+      console.error('Gift Card Creation Failed: ' + error.message);
+    })
+  })
+  .catch((error) => {
+    console.error('Token Acquisition Failed: ' + error.message);
+  });
+}
+app.post("/order", (req, res) => {
+  if (Array.isArray(req.body.bitjemProducts) && req.body.bitjemProducts.length > 0) {
+    req.body.bitjemProducts.forEach(product => {
+      orderBitJem(product, req.body.email);
     });
   } else {
     const username = 'NEXOZ-LLC-SANDBOX';
@@ -769,7 +886,7 @@ function updateCurrencyRates() {
   .then(response => response.json())
   .then(data => {
     if (data) {
-      data.rates.forEach(currency => {
+      data.rates?.forEach(currency => {
         CurrencyRate.findOneAndUpdate(
           { currencyCode: currency.currencyCode },
           { value: currency.value,
@@ -786,6 +903,54 @@ function updateCurrencyRates() {
     console.error('Error fetching data:', error);
   });
 }
+
+app.post("/convertCrypto", async (req, res) => {
+  try {
+    let cryptoSymbol = req.body.currency;
+    const amount = Number(req.body.amount);
+
+    if (!cryptoSymbol || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid cryptoSymbol or amount' });
+    }
+
+    let cryptoToUsdRate;
+
+    // Handle USDT as a special case
+    if (cryptoSymbol.toLowerCase() === 'usdt') {
+      cryptoToUsdRate = 1.0;
+    } else {
+      if (cryptoSymbol.toLowerCase() === 'btc') {
+        cryptoSymbol = 'bitcoin';
+      }
+      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+        params: {
+          ids: cryptoSymbol,
+          vs_currencies: 'usd',
+        },
+      });
+
+      const cryptoData = response.data[cryptoSymbol];
+      if (!cryptoData || !cryptoData.usd) {
+        return res.status(404).json({ error: 'Cryptocurrency not found or exchange rate not available' });
+      }
+
+      cryptoToUsdRate = cryptoData.usd;
+    }
+
+    const amountInUSD = amount * cryptoToUsdRate;
+
+    CurrencyRate.findOne({
+      currencyCode: req.body.to,
+    }).then((res1) => {
+      let amount;
+      amount = amountInUSD / res1.value;
+      res.send({ cur: amount });
+    });
+  } catch (error) {
+    console.error('Error fetching conversion rate:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 const interval = 3600000;
 
