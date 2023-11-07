@@ -7,6 +7,9 @@ import Buyer from "./models/Buyer.js";
 import Product from "./models/Product.js";
 import Country from "./models/Country.js";
 import Currency from "./models/Currency.js";
+import Transaction from "./models/Transaction.js";
+import Order from "./models/Order.js";
+import Discount from "./models/Discount.js";
 import CurrencyRate from "./models/CurrencyRate.js";
 import Promo from "./models/Promo.js";
 import CC from "currency-converter-lt";
@@ -139,7 +142,7 @@ app.post("/createpromo", (req, res) => {
 });
 
 app.post("/getpromo", (req, res) => {
-  Promo.findOne({ code: req.body.code }).then((res2) => {
+  Discount.findOne({ name: req.body.code }).then((res2) => {
     if (res2) {
       res.status(200).send(res2);
     } else {
