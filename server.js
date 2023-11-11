@@ -144,7 +144,21 @@ app.post("/createpromo", (req, res) => {
 app.post("/getpromo", (req, res) => {
   Discount.findOne({ name: req.body.code }).then((res2) => {
     if (res2) {
-      res.status(200).send(res2);
+      if (res2.type === 'Fixed Cost' && req.body.currency !== 'USD') {
+        const fromCurrency = 'USD';
+        const toCurrency = req.body.currency;
+        const amount = res2.rate;
+      
+        convertCurrency(fromCurrency, toCurrency, amount, (convertedAmount) => {
+          let discount = Math.floor((convertedAmount / req.body.total) * 100);
+          res.status(200).send({ discount: discount, type: res2.type });
+        });
+      } else if (res2.type === 'Fixed Cost' && req.body.currency === 'USD') {
+        let discount = Math.floor((res2.rate / req.body.total) * 100);
+        res.status(200).send({ discount: discount, rate: res2.rate, type: res2.type });
+      } else {
+        res.status(200).send({ discount: res2.rate, type: res2.type });
+      }
     } else {
       res.status(400).send("code does not exist");
     }
