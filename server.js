@@ -15,7 +15,7 @@ import Promo from "./models/Promo.js";
 import Bitjem from "./models/BitjemCard.js";
 import CC from "currency-converter-lt";
 
-// import bodyParser from "body-parser";
+import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import jwt from "jsonwebtoken";
