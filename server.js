@@ -12,9 +12,10 @@ import Order from "./models/Order.js";
 import Discount from "./models/Discount.js";
 import CurrencyRate from "./models/CurrencyRate.js";
 import Promo from "./models/Promo.js";
+import Bitjem from "./models/BitjemCard.js";
 import CC from "currency-converter-lt";
 
-import bodyParser from "body-parser";
+// import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import jwt from "jsonwebtoken";
@@ -510,6 +511,54 @@ function orderBitJem(product, email) {
                     console.log("mail success");
                   }
                 });
+
+                const bitjemOrder = new Bitjem({
+                  _id: new Types.ObjectId(),
+                  orderId: response.body.id,
+                  code: response.body.code,
+                  pin: response.body.pin,
+                  date: getCurrentDate(),
+                  status: 'complete',
+                  currency: response.body.currency,
+                  cryptoValue: response.body.cryptoValue,
+                  orderBy: email
+                });
+                bitjemOrder.save()
+                .then((result3) => {
+                })
+                const order = new Order({
+                  _id: new Types.ObjectId(),
+                  user: email,
+                  price: total,
+                  brand: 'Bitjem',
+                  date: getCurrentDate(),
+                  status: 'complete'
+                });
+                order.save()
+                  .then((result4) => {
+                    const transaction = new Transaction({
+                      _id: new Types.ObjectId(),
+                      user: email,
+                      type: 'Order',
+                      balanceBefore: Number(result2.balance),
+                      balanceAfter: Number(result.balance),
+                      status: 'Complete',
+                      date: getCurrentDate(),
+                      totalAmount: Number(total)
+                    });
+                    transaction.save()
+                    .then((result5) => {
+                        res.status(200).send({balance: Number(result.balance)});
+                    })
+                    .catch((saveError) => {
+                      console.error("Error saving transaction:", saveError);
+                      res.status(400).send("Error saving transaction");
+                    });  
+                  })
+                  .catch((saveError) => {
+                    console.error("Error saving order:", saveError);
+                    res.status(400).send("Error saving order");
+                  });
               }
             });
           }
@@ -524,6 +573,7 @@ function orderBitJem(product, email) {
     console.error('Token Acquisition Failed: ' + error.message);
   });
 }
+
 app.post("/order", (req, res) => {
   if (Array.isArray(req.body.bitjemProducts) && req.body.bitjemProducts.length > 0) {
     req.body.bitjemProducts.forEach(product => {
@@ -532,7 +582,6 @@ app.post("/order", (req, res) => {
   } else {
     const username = 'NEXOZ-LLC-SANDBOX';
     const password = '7e68311d-4008-4913-888e-de15491b4db5';
-    console.log(req.body.products);
     const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
     fetch("https://api.bamboocardportal.com/api/integration/v1.0/accounts", {
         method: "GET",
@@ -543,7 +592,6 @@ app.post("/order", (req, res) => {
       }).then((response) => response.json())
       .then((accounts) => {
         if (accounts) {
-          console.log('user',accounts);
         const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const data = {
           RequestId: uniqueId,
@@ -584,7 +632,7 @@ app.post("/order", (req, res) => {
                     from: frommail,
                     to: tomail,
                     subject: "Gift Card From Ozchest",
-                    text: `${req.body.product}  Link: ${data1}`,
+                    text: `Link: ${data1}`,
                   };
                   transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
@@ -594,6 +642,39 @@ app.post("/order", (req, res) => {
                       res.send(data1);
                     }
                   });
+                  const order = new Order({
+                    _id: new Types.ObjectId(),
+                    user: req.body.email,
+                    price: req.body.total,
+                    brand: req.body.products[0]?.brand,
+                    date: getCurrentDate(),
+                    status: 'complete'
+                  });
+                  order.save()
+                  .then((result3) => {
+                    const transaction = new Transaction({
+                      _id: new Types.ObjectId(),
+                      user: req.body.email,
+                      type: 'Order',
+                      balanceBefore: Number(result2.balance),
+                      balanceAfter: Number(result.balance),
+                      status: 'Complete',
+                      date: getCurrentDate(),
+                      totalAmount: Number(req.body.total)
+                    });
+                    transaction.save()
+                    .then((result4) => {
+                        res.status(200).send({balance: Number(result.balance)});
+                    })
+                    .catch((saveError) => {
+                      console.error("Error saving transaction:", saveError);
+                      res.status(400).send("Error saving transaction");
+                    });  
+                  })
+                  .catch((saveError) => {
+                    console.error("Error saving order:", saveError);
+                    res.status(400).send("Error saving order");
+                  }); 
                 }
               });
             }
@@ -605,6 +686,26 @@ app.post("/order", (req, res) => {
         console.log(error)
       })
   }
+});
+
+app.post("/verifyBitjemOrder", (req, res) => {
+  Bitjem.findOne({
+    orderId: req.body.id,
+  }).then((res2) => {
+    if (res2) {
+      const data = {
+        id: req.body.id,
+        code: req.body.code,
+        success: true
+      }
+      res.send(data);
+    } else {
+      const data = {
+        success: false
+      }
+      res.send(data);
+    }
+  });
 });
 
 app.post("/balance", (req, res) => {
@@ -640,8 +741,24 @@ app.post("/ipn", (req, res) => {
           Buyer.findOneAndUpdate(
             { key: req.body.order_id },
             { balance: Number(response) + Number(res2.balance) }
-          ).then((result) => {
-            console.log("updated");
+          ).then((result) => {          
+            const transaction = new Transaction({
+              _id: new Types.ObjectId(),
+              user: req.body.order_id,
+              type: 'Topup',
+              balanceBefore: Number(res2.balance),
+              balanceAfter: Number(result.balance),
+              status: 'Complete',
+              date: getCurrentDate(),
+              totalAmount: Number(req.body.payment_amount)
+            });
+            transaction.save()
+            .then((result) => {
+            })
+            .catch((saveError) => {
+              console.error("Error saving transaction:", saveError);
+              res.status(400).send("Error saving transaction");
+            });  
           });
         }
       });
