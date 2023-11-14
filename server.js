@@ -514,7 +514,7 @@ function orderBitJem(product, email) {
 
                 const bitjemOrder = new Bitjem({
                   _id: new Types.ObjectId(),
-                  orderId: response.body.id,
+                  cardId: response.body.id,
                   code: response.body.code,
                   pin: response.body.pin,
                   date: getCurrentDate(),
@@ -688,25 +688,39 @@ app.post("/order", (req, res) => {
   }
 });
 
-app.post("/verifyBitjemOrder", (req, res) => {
-  Bitjem.findOne({
-    orderId: req.body.id,
-  }).then((res2) => {
-    if (res2) {
-      const data = {
-        id: req.body.id,
-        code: req.body.code,
-        success: true
+async function checkCardExistence(card) {
+  try {
+    const res2 = await Bitjem.findOne({
+      cardId: card.id,
+      code: card.code
+    });
+
+    return res2 || null;
+  } catch (error) {
+    throw error;
+  }
+}
+
+app.post("/verifyBitjemOrder", async (req, res) => {
+  const { cards } = req.body;
+
+  const response = await Promise.all(cards.map(async card => {
+    try {
+      const exists = await checkCardExistence(card);
+
+      if (exists) {
+        return { id: card.id, success: true };
+      } else {
+        return { id: card.id, success: false, errorMessage: 'CARD NOT FOUND' };
       }
-      res.send(data);
-    } else {
-      const data = {
-        success: false
-      }
-      res.send(data);
+    } catch (error) {
+      return { id: card.id, success: false, errorMessage: 'INTERNAL SERVER ERROR' };
     }
-  });
+  }));
+
+  res.json({ cards: response });
 });
+
 
 app.post("/balance", (req, res) => {
   Buyer.findOne({
