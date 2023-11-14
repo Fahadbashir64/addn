@@ -718,7 +718,7 @@ app.post("/verifyBitjemOrder", async (req, res) => {
     }
   }));
 
-  res.json({ cards: response });
+  res.status(200).json({ cards: response });
 });
 
 
