@@ -502,7 +502,7 @@ function orderBitJem(product, email) {
                   from: frommail,
                   to: tomail,
                   subject: "Gift Card From Ozchest",
-                  text: `${response}`,
+                  text: `${response.body}`,
                 };
                 transporter.sendMail(mailOptions, function (error, info) {
                   if (error) {
