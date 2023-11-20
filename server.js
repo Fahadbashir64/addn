@@ -1,4 +1,4 @@
-import express from "express";
+import express, { response } from "express";
 const app = express();
 import cors from "cors";
 import fetch from "node-fetch";
@@ -384,56 +384,57 @@ const baseUrl = 'https://staging-api.bitjem-services.com';
 let authToken = null;
 
 // Create a function to obtain or refresh the token
-async function getToken() {
+function getToken() {
   let email = 'Ceo@ozchest.com';
   try {
     if (authToken) {
       // Check if the token exists and is still valid (within 24 hours)
       const tokenExpirationDate = new Date(authToken.expiresAt);
       if (tokenExpirationDate > new Date()) {
-        return authToken.token;
+        return Promise.resolve(authToken.token);
       }
     }
 
-    CryptoUser.findOne({
+    return CryptoUser.findOne({
       email: email,
-    }).then(async (user) => {
+    }).then((user) => {
       if (user) {
         const loginData = {
           emailAddress: email,
           password: user.password,
         };
-    
-        const loginResponse = await fetch(`${baseUrl}/api/login`, {
+
+        return fetch(`${baseUrl}/api/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(loginData),
+        }).then((loginResponse) => {
+          if (!loginResponse.ok) {
+            throw new Error('Login Failed');
+          }
+
+          return loginResponse.json();
+        }).then((loginResponseData) => {
+          // Store the token and its expiration time
+          authToken = {
+            token: loginResponseData.authToken,
+            expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000), // 24 hours in milliseconds
+          };
+
+          return Promise.resolve(authToken.token);
         });
-    
-        if (!loginResponse.ok) {
-          throw new Error('Login Failed');
-        }
-    
-        const loginResponseData = await loginResponse.json();
-    
-        // Store the token and its expiration time
-        authToken = {
-          token: loginResponseData.authToken,
-          expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000), // 24 hours in milliseconds
-        };
-    
-        return authToken.token;
       } else {
         console.log("User does not exist");
         return;
       }
     });
   } catch (error) {
-    throw new Error('Login Failed: ' + error.message);
+    return Promise.reject(new Error('Login Failed: ' + error.message));
   }
 }
+
 
 // Create a gift card using the stored token
 async function createGiftCard(authToken, data) {
@@ -473,112 +474,125 @@ async function createGiftCard(authToken, data) {
   }
 }
 
-function orderBitJem(product, email) {
-  getToken()
-  .then((authToken) => {
-    createGiftCard(authToken, product).then((response) => {
-      if (response) {
-        convertCurrency(product.currency, 'EUR', product.amount, (total) => {
-          User.findOne({ email: email }).then((result2) => {
-            if (result2) {
-            User.findOneAndUpdate(
-              { email: email },
-              { balance: result2?.balance - total }
-            ).then((result) => {
-              if (result) {
-                console.log('succes checkout');
-                const frommail = "ozchest1@gmail.com";
-                const password = "ozchest@123";
-                const tomail = email;
-                var transporter = nodemailer.createTransport({
-                  service: "gmail",
-    
-                  auth: {
-                    user: frommail,
-                    pass: password,
-                  },
-                });
-                var mailOptions = {
-                  from: frommail,
-                  to: tomail,
-                  subject: "Gift Card From Ozchest",
-                  text: `${response.body}`,
-                };
-                transporter.sendMail(mailOptions, function (error, info) {
-                  if (error) {
-                    console.log("mail failed");
-                  } else {
-                    console.log("mail success");
-                  }
-                });
+async function orderBitJem(product, email, key) {
+  try {
+    const authToken = await getToken();
 
-                const bitjemOrder = new Bitjem({
-                  _id: new Types.ObjectId(),
-                  cardId: response.body.id,
-                  code: response.body.code,
-                  pin: response.body.pin,
-                  date: getCurrentDate(),
-                  status: 'complete',
-                  currency: response.body.currency,
-                  cryptoValue: response.body.cryptoValue,
-                  orderBy: email
-                });
-                bitjemOrder.save()
-                .then((result3) => {
-                })
-                const order = new Order({
-                  _id: new Types.ObjectId(),
-                  user: email,
-                  price: total,
-                  brand: 'Bitjem',
-                  date: getCurrentDate(),
-                  status: 'complete'
-                });
-                order.save()
-                  .then((result4) => {
-                    const transaction = new Transaction({
-                      _id: new Types.ObjectId(),
-                      user: email,
-                      type: 'Order',
-                      balanceBefore: Number(result2.balance),
-                      balanceAfter: Number(result.balance),
-                      status: 'Complete',
-                      date: getCurrentDate(),
-                      totalAmount: Number(total)
-                    });
-                    transaction.save()
-                    .then((result5) => {
-                        res.status(200).send({balance: Number(result.balance)});
-                    })
-                    .catch((saveError) => {
-                      console.error("Error saving transaction:", saveError);
-                      res.status(400).send("Error saving transaction");
-                    });  
-                  })
-                  .catch((saveError) => {
-                    console.error("Error saving order:", saveError);
-                    res.status(400).send("Error saving order");
-                  });
-              }
-            });
-          }
-          });
+    if (authToken) {
+      const response = await createGiftCard(authToken, product);
+
+      const total = await new Promise((resolve, reject) => {
+        convertCurrency(product.currency, 'EUR', product.amount, (convertedTotal) => {
+          resolve(convertedTotal);
         });
+      });
+
+      let result2 = await Buyer.findOne({ key: key });
+
+      if (result2) {
+
+        console.log('Success checkout');
+
+        const frommail = "ozchest.com@gmail.com";
+        const password = "qxppqcfgtdfismel";
+        const tomail = email;
+
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: frommail,
+            pass: password,
+          },
+        });
+
+        const mailOptions = {
+          from: frommail,
+          to: tomail,
+          subject: "Gift Card From Ozchest",
+          text: `
+            Code: ${response.code}
+            Crypto Value: ${response.cryptoValue}
+            Currency: ${response.currency}
+            Pin: ${response.pin}`,
+        };
+
+        const mailResult = await transporter.sendMail(mailOptions);
+
+        if (mailResult) {
+          const bitjemOrder = new Bitjem({
+            _id: new mongoose.Types.ObjectId(),
+            cardId: response.id,
+            code: response.code,
+            pin: response.pin,
+            date: getCurrentDate(),
+            status: 'complete',
+            currency: response.currency,
+            cryptoValue: response.cryptoValue,
+            orderBy: email,
+          });
+
+          await bitjemOrder.save();
+
+          console.log("Mail success");
+          // Return the deducted total for this product
+          return Number(total);
+        }
+      }
     }
-    }).catch((error) => {
-      console.error('Gift Card Creation Failed: ' + error.message);
-    })
-  })
-  .catch((error) => {
-    console.error('Token Acquisition Failed: ' + error.message);
-  });
+  } catch (error) {
+    console.error('Order failed:', error.message);
+    throw error;
+  }
 }
 
-app.post("/order", (req, res) => {
+app.post("/order", async (req, res) => {
   if (Array.isArray(req.body.bitjemProducts) && req.body.bitjemProducts.length > 0) {
-    req.body.bitjemProducts.forEach(product => {
-      orderBitJem(product, req.body.email);
-    });
+    try {
+      const promises = req.body.bitjemProducts.map(product => {
+        return orderBitJem(product, req.body.email, req.body.user);
+      });
+
+      const deductedAmounts = await Promise.all(promises);
+
+      // Sum up the deducted amounts
+      const totalDeducted = deductedAmounts.reduce((acc, amount) => acc + amount, 0);
+
+      // Update the user's balance in the database with the total deducted amount
+      const result2 = await Buyer.findOneAndUpdate(
+        { key: req.body.user },
+        { $inc: { balance: -totalDeducted } },
+        { new: true }
+      );
+
+      if (result2) {
+        const order = new Order({
+          _id: new mongoose.Types.ObjectId(),
+          user: req.body.email,
+          price: totalDeducted,
+          brand: 'Bitjem',
+          date: getCurrentDate(),
+          status: 'complete',
+        });
+
+        await order.save();
+
+        const transaction = new Transaction({
+          _id: new mongoose.Types.ObjectId(),
+          user: req.body.email,
+          type: 'Order',
+          balanceBefore: Number(result2.balance),
+          balanceAfter: Number(result2.balance - totalDeducted),
+          status: 'Complete',
+          date: getCurrentDate(),
+          totalAmount: Number(totalDeducted),
+        });
+
+        await transaction.save();
+      }
+      res.status(200).send('Success');
+    } catch (error) {
+      res.status(400).send(error.message);
+    }
   } else {
     const username = 'NEXOZ-LLC-SANDBOX';
     const password = '7e68311d-4008-4913-888e-de15491b4db5';
@@ -617,8 +631,8 @@ app.post("/order", (req, res) => {
               ).then((result) => {
                 if (result) {
                   console.log('succes checkout');
-                  const frommail = "ozchest1@gmail.com";
-                  const password = "ozchest@123";
+                  const frommail = "ozchest.com@gmail.com";
+                  const password = "qxppqcfgtdfismel";
                   const tomail = req.body.email;
                   var transporter = nodemailer.createTransport({
                     service: "gmail",
@@ -632,18 +646,19 @@ app.post("/order", (req, res) => {
                     from: frommail,
                     to: tomail,
                     subject: "Gift Card From Ozchest",
-                    text: `Link: ${data1}`,
+                    text: JSON.stringify(data1.body),
                   };
                   transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
                       console.log("mail failed");
+                      res.status(400).send("Error sending mail");
                     } else {
                       console.log("mail success");
                       res.send(data1);
                     }
                   });
                   const order = new Order({
-                    _id: new Types.ObjectId(),
+                    _id: new mongoose.Types.ObjectId(),
                     user: req.body.email,
                     price: req.body.total,
                     brand: req.body.products[0]?.brand,
@@ -653,7 +668,7 @@ app.post("/order", (req, res) => {
                   order.save()
                   .then((result3) => {
                     const transaction = new Transaction({
-                      _id: new Types.ObjectId(),
+                      _id: new mongoose.Types.ObjectId(),
                       user: req.body.email,
                       type: 'Order',
                       balanceBefore: Number(result2.balance),
@@ -684,6 +699,7 @@ app.post("/order", (req, res) => {
         } 
       }).catch(error => {
         console.log(error)
+        res.status(400).send("Error");
       })
   }
 });
@@ -757,7 +773,7 @@ app.post("/ipn", (req, res) => {
             { balance: Number(response) + Number(res2.balance) }
           ).then((result) => {          
             const transaction = new Transaction({
-              _id: new Types.ObjectId(),
+              _id: new mongoose.Types.ObjectId(),
               user: req.body.order_id,
               type: 'Topup',
               balanceBefore: Number(res2.balance),
@@ -780,6 +796,17 @@ app.post("/ipn", (req, res) => {
   }
   res.json({ status: 200 });
 });
+
+function getCurrentDate() {
+  const currentDate = new Date();
+
+  const day = currentDate.getDate().toString().padStart(2, '0');
+  const month = (currentDate.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+  const year = currentDate.getFullYear();
+
+  const formattedDate = `${day}/${month}/${year}`;
+  return formattedDate;
+}
 
 app.get("/apitoken", (req, res) => {
   fetch("https://api.prepaidforge.com/v1/1.0/signInWithApi", {
