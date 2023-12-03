@@ -13,6 +13,7 @@ import Discount from "./models/Discount.js";
 import CurrencyRate from "./models/CurrencyRate.js";
 import Promo from "./models/Promo.js";
 import Bitjem from "./models/BitjemCard.js";
+import Brand from "./models/Brand.js";
 import CC from "currency-converter-lt";
 
 import bodyParser from "body-parser";
@@ -963,6 +964,11 @@ function updateStock() {
           });
         }
       });
+
+      // Update the data in MongoDB
+      for (const brand of data.brands) {
+        Brand.updateOne({ internalId: brand.internalId }, { $set: brand }, { upsert: true });
+      }
     } else {
       console.log('Data does not contain products array.');
     }
@@ -1126,6 +1132,7 @@ app.post("/convertCrypto", async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 const interval = 3600000;
 
