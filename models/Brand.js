@@ -34,7 +34,4 @@ const brandSchema = new mongoose.Schema({
     products: [productsSchema],
     categories: [categorySchema]
 });
-
-const Brands = mongoose.model('Brand', brandSchema);
-
-module.exports = Brands;
+export default mongoose.model('Brand', brandSchema);
