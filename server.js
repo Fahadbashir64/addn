@@ -1133,6 +1133,45 @@ app.post("/convertCrypto", async (req, res) => {
   }
 });
 
+async function readAndStoreData(filePath) {
+  try {
+    // Read the JSON file
+    const data = await fs.readFile(filePath, 'utf8');
+    
+    // Parse the JSON data
+    const jsonData = JSON.parse(data);
+
+    // Insert data into MongoDB
+    await Brand.insertMany(jsonData);
+
+    console.log('Data successfully stored in MongoDB.');
+  } catch (error) {
+    console.error('Error reading or storing data:', error);
+  } finally {
+    // Close the MongoDB connection
+    mongoose.connection.close();
+  }
+}
+
+async function readAndStoreUniqueCurrencyCodes(filePath, outputFilePath) {
+  try {
+    // Read the JSON file
+    const data = await fs.readFile(filePath, 'utf8');
+    
+    // Parse the JSON data
+    const jsonData = JSON.parse(data);
+
+    // Extract unique currency codes
+    const uniqueCurrencyCodes = [...new Set(jsonData.map(item => item.currencyCode))];
+
+    // Store unique currency codes in a file
+    await fs.writeFile(outputFilePath, JSON.stringify(uniqueCurrencyCodes, null, 2), 'utf8');
+
+    console.log('Unique currency codes successfully stored in the output file.');
+  } catch (error) {
+    console.error('Error reading or storing data:', error);
+  }
+}
 
 const interval = 3600000;
 

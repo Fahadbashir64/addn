@@ -72467,5 +72467,52 @@
                 "description": null
             }
         ]
+    },
+    {
+        "internalId": "25818",
+        "name": "Bitjem",
+        "countryCode": "",
+        "currencyCode": "",
+        "description": "",
+        "disclaimer": null,
+        "redemptionInstructions": "",
+        "terms": "",
+        "logoUrl": "",
+        "modifiedDate": "2023-07-14T09:11:40.3234683",
+        "products": [
+            {
+                "id": 669578,
+                "name": "Bitjem BTC",
+                "minFaceValue": 1,
+                "maxFaceValue": 100,
+                "count": null,
+                "price": {
+                    "min": 1,
+                    "max": 100,
+                    "currencyCode": "BTC"
+                },
+                "modifiedDate": "2023-09-21T20:53:14.3177766"
+            },
+            {
+                "id": 669678,
+                "name": "Bitjem USTD",
+                "minFaceValue": 1,
+                "maxFaceValue": 5000,
+                "count": null,
+                "price": {
+                    "min": 1,
+                    "max": 5000,
+                    "currencyCode": "USTD"
+                },
+                "modifiedDate": "2023-09-21T20:53:14.3177766"
+            }
+        ],
+        "categories": [
+            {
+                "id": 9,
+                "name": "crypto",
+                "description": null
+            }
+        ]
     }
 ]
