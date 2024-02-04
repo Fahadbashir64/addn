@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import mongoose from "mongoose";
 import Buyer from "./models/Buyer.js";
 import Product from "./models/Product.js";
+import OzchestProduct from "./models/OzchestProduct.js";
 import Country from "./models/Country.js";
 import Currency from "./models/Currency.js";
 import Transaction from "./models/Transaction.js";
@@ -923,7 +924,7 @@ app.post("/savecurrency", (req, res) => {
 });
 
 app.post("/getStock", (req, res) => {
-  Product.findOne({
+  OzchestProduct.findOne({
     productId: req.body.productId,
   }).then((res2) => {
     res.send(res2);
@@ -954,13 +955,13 @@ function updateStock() {
             Product.findOneAndUpdate(
               { productId: product.id },
               { count: product.count,
-                price: product.price,
                 dateModified: new Date()},
-            ).then((result) => {
-              // res.status(200).send();
-            }).catch((error) => {
-                // res.status(400).send(error);
-            });
+            );
+            OzchestProduct.findOneAndUpdate(
+              { productId: product.id },
+              { count: product.count,
+                dateModified: new Date()},
+            );
           });
         }
       });
@@ -992,9 +993,11 @@ async function createStock() {
         jsonData.forEach(object => {
           if (object.products && Array.isArray(object.products)) {
             object.products.forEach(product => {
-              const temp = new Product({
+              const temp = new OzchestProduct({
                 _id: new mongoose.Types.ObjectId(),
+                brandId: object.internalId,
                 productId: product.id,
+                name: product.name,
                 count: product.count,
                 price: product.price,
                 minFaceValue: product.minFaceValue,

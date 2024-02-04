@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 // Define the schema for the product data
-const productSchema = new mongoose.Schema({
+const ozchestProductSchema = new mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   brandId: String,
   productId: Number,
@@ -20,4 +20,4 @@ const productSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.model("Product", productSchema);
+export default mongoose.model("OzchestProduct", ozchestProductSchema);
