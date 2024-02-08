@@ -291,7 +291,7 @@ app.post("/sku", (req, res) => {
 });
 
 app.post("/stocks", (req, res) => {
-  Product.findOne({
+  OzchestProduct.findOne({
     brand: req.body.brand,
     countries: req.body.country,
     currencyCode: req.body.code,
