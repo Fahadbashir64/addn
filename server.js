@@ -979,9 +979,9 @@ function updateStock() {
   });
 }
 
-async function createStock() {
+async function createStock(isOzchest=false) {
   console.log('12');
-
+  const modelToUse = isOzchest ? OzchestProduct : Product;
   const filePath = 'brands.json'; // Replace 'data.json' with your JSON file path
     try {
       const data = await fs.readFile(filePath, 'utf8');
@@ -993,12 +993,13 @@ async function createStock() {
         jsonData.forEach(object => {
           if (object.products && Array.isArray(object.products)) {
             object.products.forEach(product => {
-              const temp = new OzchestProduct({
+              const temp = new modelToUse({
                 _id: new mongoose.Types.ObjectId(),
                 brandId: object.internalId,
                 productId: product.id,
                 name: product.name,
                 count: product.count,
+                isUpdated: false,
                 price: product.price,
                 minFaceValue: product.minFaceValue,
                 maxFaceValue: product.maxFaceValue,

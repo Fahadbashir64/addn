@@ -7,6 +7,7 @@ const ozchestProductSchema = new mongoose.Schema({
   productId: Number,
   name: String,
   count: Number,
+  isUpdated: Boolean,
   minFaceValue: Number,
   maxFaceValue: Number,
   dateModified: {
