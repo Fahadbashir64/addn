@@ -999,8 +999,8 @@ async function createStock(isOzchest=false) {
                 productId: product.id,
                 name: product.name,
                 count: product.count,
-                isUpdated: false,
                 price: product.price,
+                originalPrice: product.price,
                 minFaceValue: product.minFaceValue,
                 maxFaceValue: product.maxFaceValue,
                 DateModified: currentDate
@@ -1025,7 +1025,6 @@ async function createStock(isOzchest=false) {
       console.error('Error parsing JSON:', parseError);
     }
 }
-
 async function createCurrencyRates() {
   console.log('12');
 

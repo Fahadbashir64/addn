@@ -7,7 +7,6 @@ const ozchestProductSchema = new mongoose.Schema({
   productId: Number,
   name: String,
   count: Number,
-  isUpdated: Boolean,
   minFaceValue: Number,
   maxFaceValue: Number,
   dateModified: {
@@ -15,6 +14,11 @@ const ozchestProductSchema = new mongoose.Schema({
     default: Date.now,
   },
   price: {
+    min: Number,
+    max: Number,
+    currencyCode: String,
+  },
+  originalPrice: {
     min: Number,
     max: Number,
     currencyCode: String,
