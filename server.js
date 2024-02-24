@@ -746,7 +746,7 @@ app.post("/balance", (req, res) => {
   }).then((res2) => {
     if (res2) {
       console.log(res2.balance);
-      res.send({ balance: res2.balance });
+      res.send({ balance: res2.balance, email: res2.email });
     }
   });
 });
@@ -797,6 +797,45 @@ app.post("/ipn", (req, res) => {
     });
   }
   res.json({ status: 200 });
+});
+
+app.post("/addBalance", (req, res) => {
+    let currencyConverter = new CC({
+      from: 'usd',
+      to: "eur",
+      amount: req.body.amount,
+    });
+    currencyConverter.convert().then((response) => {
+      Buyer.findOne({
+        key: req.body.user,
+      }).then((res2) => {
+        if (res2) {
+          Buyer.findOneAndUpdate(
+            { key: req.body.user },
+            { balance: Number(response) + Number(res2.balance) }
+          ).then((result) => {          
+            const transaction = new Transaction({
+              _id: new mongoose.Types.ObjectId(),
+              user: req.body.user,
+              type: 'Topup',
+              balanceBefore: Number(res2.balance),
+              balanceAfter: Number(result.balance),
+              status: 'Complete',
+              date: getCurrentDate(),
+              totalAmount: Number(response)
+            });
+            transaction.save()
+            .then((result2) => {
+              res.status(200).send({balance:result.balance});
+            })
+            .catch((saveError) => {
+              console.error("Error saving transaction:", saveError);
+              res.status(400).send("Error saving transaction");
+            });  
+          });
+        }
+      });
+    });
 });
 
 function getCurrentDate() {
