@@ -812,7 +812,8 @@ app.post("/addBalance", (req, res) => {
         if (res2) {
           Buyer.findOneAndUpdate(
             { key: req.body.user },
-            { balance: Number(response) + Number(res2.balance) }
+            { balance: Number(response) + Number(res2.balance) },
+            { new: true }
           ).then((result) => {          
             const transaction = new Transaction({
               _id: new mongoose.Types.ObjectId(),
