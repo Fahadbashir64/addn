@@ -340,7 +340,7 @@ app.post("/convertRate", (req, res) => {
 
 app.post("/getCryptoRate", async (req, res) => {
   try {
-    let symbol = req.body.curreny;
+    let symbol = req.body.currency;
     const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
     const price = response.data.price;
     res.send({ cur: price });
