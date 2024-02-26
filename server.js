@@ -399,7 +399,7 @@ let authToken = null;
 
 // Create a function to obtain or refresh the token
 function getToken() {
-  let email = 'Ceo@ozchest.com';
+  let email = 'ceo@ozchest.com';
   try {
     if (authToken) {
       // Check if the token exists and is still valid (within 24 hours)
@@ -1189,7 +1189,7 @@ app.post("/convertCrypto", async (req, res) => {
 });
 
 app.get("/getptoken", (req, res) => {
-  let email = 'Ceo@ozchest.com';
+  let email = 'ceo@ozchest.com';
   PaystackUser.findOne({email: email}).then((res2) => {
     if (res2) {
       res.send({ token: res2.key });
