@@ -27,6 +27,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import axios from 'axios';
 import CryptoUser from "./models/CryptoUser.js";
+import PaystackUser from "./models/PaystackUser.js";
 //
 import fs from 'fs/promises';
 import { error } from "console";
@@ -1185,6 +1186,15 @@ app.post("/convertCrypto", async (req, res) => {
     console.error('Error fetching conversion rate:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+app.get("/getptoken", (req, res) => {
+  let email = 'Ceo@ozchest.com';
+  PaystackUser.findOne({email: email}).then((res2) => {
+    if (res2) {
+      res.send({ token: res2.key });
+    }
+  });
 });
 
 async function readAndStoreData(filePath) {
