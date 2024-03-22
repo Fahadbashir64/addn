@@ -619,7 +619,7 @@ app.post("/order", async (req, res) => {
         },
       }).then((response) => response.json())
       .then((accounts) => {
-        if (accounts) {
+        if (accounts && !accounts['error']) {
         const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const data = {
           RequestId: uniqueId,
@@ -710,7 +710,10 @@ app.post("/order", async (req, res) => {
             });
           }
         });
-        } 
+        } else {
+          console.log(accounts);
+          res.status(500).send("Error");
+        }
       }).catch(error => {
         console.log(error)
         res.status(400).send("Error");
