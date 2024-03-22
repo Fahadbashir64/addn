@@ -619,6 +619,7 @@ app.post("/order", async (req, res) => {
         },
       }).then((response) => response.json())
       .then((accounts) => {
+        console.log(accounts);
         if (accounts && !accounts['error']) {
         const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const data = {
@@ -636,6 +637,7 @@ app.post("/order", async (req, res) => {
         };
         fetch('https://api.bamboocardportal.com/api/integration/v1.0/orders/checkout', requestOptions).then((res3) => res3.json())
         .then((data1) => {
+          console.log(data1);
           if (data1) {
             Buyer.findOne({ key: req.body.user }).then((result2) => {
               if(result2) {
