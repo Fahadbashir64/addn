@@ -611,6 +611,7 @@ app.post("/order", async (req, res) => {
     const username = 'NEXOZ-LLC-SANDBOX';
     const password = '0c952998-dc60-40d1-81c5-e938ca418478';
     const authHeaderValue = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+    console.log('auth',authHeaderValue);
     fetch("https://api.bamboocardportal.com/api/integration/v1.0/accounts", {
         method: "GET",
         headers: {
