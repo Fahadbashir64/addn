@@ -785,15 +785,15 @@ app.post("/ipn", (req, res) => {
       to: "eur",
       amount: req.body.price_amount,
     });
-    currencyConverter.convert().then((response) => {
-      console.log(response);
+    convertCurrency(req.body.price_currency, "EUR", req.body.price_amount, (convertedAmount) => {
+      console.log(convertedAmount);
       Buyer.findOne({
         key: req.body.order_id,
       }).then((res2) => {
         if (res2) {
           Buyer.findOneAndUpdate(
             { key: req.body.order_id },
-            { balance: Number(response) + Number(res2.balance) }
+            { balance: Number(convertedAmount) + Number(res2.balance) }
           ).then((result) => {          
             const transaction = new Transaction({
               _id: new mongoose.Types.ObjectId(),
@@ -826,14 +826,14 @@ app.post("/addBalance", (req, res) => {
       to: "eur",
       amount: req.body.amount,
     });
-    currencyConverter.convert().then((response) => {
+    convertCurrency('USD', "EUR", req.body.amount, (convertedAmount) => {
       Buyer.findOne({
         key: req.body.user,
       }).then((res2) => {
         if (res2) {
           Buyer.findOneAndUpdate(
             { key: req.body.user },
-            { balance: Number(response) + Number(res2.balance) },
+            { balance: Number(convertedAmount) + Number(res2.balance) },
             { new: true }
           ).then((result) => {          
             const transaction = new Transaction({
@@ -844,7 +844,7 @@ app.post("/addBalance", (req, res) => {
               balanceAfter: Number(result.balance),
               status: 'Complete',
               date: getCurrentDate(),
-              totalAmount: Number(response)
+              totalAmount: Number(convertedAmount)
             });
             transaction.save()
             .then((result2) => {
