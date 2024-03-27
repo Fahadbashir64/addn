@@ -376,8 +376,11 @@ function convertCurrency(fromCurrency, toCurrency, amount, callback) {
       callback(convertedAmount);
     } else {
       CurrencyRate.findOne({ currencyCode: fromCurrency }).then((fromCurrencyRate) => {
+        if (toCurrency === 'USD') {
+          toCurrencyRate.value = 1;
+        }
         const convertedAmount = (fromCurrencyRate.value / toCurrencyRate.value) * amount;
-        callback(convertedAmount);
+      callback(convertedAmount);
       });
     }
   });
